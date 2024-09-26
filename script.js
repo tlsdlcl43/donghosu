@@ -41,13 +41,28 @@ let lineData = [];
 document.getElementById('addLineBtn').addEventListener('click', function () {
     lineCount++;
     const lineInputDiv = document.createElement('div');
+    lineInputDiv.classList.add('lineInputDiv');
+    lineInputDiv.setAttribute('data-line-id', lineCount); // 라인 ID 설정
     lineInputDiv.innerHTML = `
         <label>라인 ${lineCount}: </label>
         <input type="number" id="lineFloorCount${lineCount}" placeholder="몇 층까지" min="1">
+        <button onclick="removeLine(${lineCount})">삭제</button>
     `;
     document.getElementById('lineInputsContainer').appendChild(lineInputDiv);
     lineData.push({ line: lineCount, floors: 0 });
 });
+
+// 라인 삭제 기능
+function removeLine(lineId) {
+    // 삭제하려는 라인의 요소를 찾고 제거
+    const lineElement = document.querySelector(`.lineInputDiv[data-line-id='${lineId}']`);
+    if (lineElement) {
+        lineElement.remove();
+    }
+
+    // lineData 배열에서 해당 라인을 삭제
+    lineData = lineData.filter(line => line.line !== lineId);
+}
 
 // 최종 동 추가 버튼 클릭 시 동호수표 생성
 document.getElementById('addFinalBuildingBtn').addEventListener('click', function () {
@@ -58,7 +73,7 @@ document.getElementById('addFinalBuildingBtn').addEventListener('click', functio
     }
 
     lineData = lineData.map((line, index) => {
-        const floors = document.getElementById(`lineFloorCount${index + 1}`).value;
+        const floors = document.getElementById(`lineFloorCount${line.line}`).value;
         return { line: line.line, floors: floors ? parseInt(floors) : 0 };
     });
 
@@ -66,6 +81,7 @@ document.getElementById('addFinalBuildingBtn').addEventListener('click', functio
     document.getElementById('buildingFormContainer').classList.add('hidden');
     lineData = []; // 데이터 초기화
     lineCount = 0; // 라인 카운트 초기화
+    document.getElementById('lineInputsContainer').innerHTML = ''; // 폼 초기화
 });
 
 // 동호수표 생성 함수
@@ -73,14 +89,20 @@ let buildingData = [];
 
 function createBuilding(buildingNumber, lines) {
     const buildingContainer = document.getElementById('buildingContainer');
-    buildingContainer.innerHTML = ""; // 기존 내용 삭제
+
+    // 새로운 동을 가로로 정렬하여 추가
+    const newBuilding = document.createElement('div');
+    newBuilding.classList.add('building');
+    newBuilding.style.display = 'inline-block'; // 동을 가로로 정렬
+    newBuilding.style.margin = '10px'; // 동 사이 간격
+
     const buildingFloors = [];
     const maxFloors = Math.max(...lines.map(line => line.floors));
 
     // 동 이름 표시
     const buildingHeader = document.createElement('h3');
     buildingHeader.innerText = `${buildingNumber}동`;
-    buildingContainer.appendChild(buildingHeader);
+    newBuilding.appendChild(buildingHeader);
 
     for (let floor = maxFloors; floor >= 1; floor--) {
         const lineContainer = document.createElement('div');
@@ -97,9 +119,10 @@ function createBuilding(buildingNumber, lines) {
             }
             lineContainer.appendChild(roomDiv);
         });
-        buildingContainer.appendChild(lineContainer);
+        newBuilding.appendChild(lineContainer);
     }
 
+    buildingContainer.appendChild(newBuilding); // 새로운 동을 전체 컨테이너에 추가
     buildingData.push({ building: buildingNumber, rooms: buildingFloors });
 }
 
@@ -109,17 +132,18 @@ document.getElementById('exportExcelBtn').addEventListener('click', function () 
 });
 
 function exportToExcel() {
-    const wb = XLSX.utils.book_new();
+    const ws_data = [["동", "라인", "호수", "층간소음"]]; // 엑셀 시트의 헤더
 
+    // 모든 동의 정보를 하나의 시트에 추가
     buildingData.forEach(building => {
-        const ws_data = [["동", "라인", "호수", "층간소음"]];
         building.rooms.forEach(room => {
             ws_data.push([building.building, room.line, room.room, ""]);
         });
-        const ws = XLSX.utils.aoa_to_sheet(ws_data);
-        XLSX.utils.book_append_sheet(wb, ws, `${building.building}동`);
     });
 
+    const ws = XLSX.utils.aoa_to_sheet(ws_data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '동호수표'); // 하나의 시트에 모든 데이터를 추가
     XLSX.writeFile(wb, '동호수표.xlsx');
 }
 
