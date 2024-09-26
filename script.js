@@ -168,64 +168,77 @@ document.getElementById('uploadFileBtn').addEventListener('click', function () {
 
 // 엑셀 데이터를 처리하여 동호수표와 분포표 결과 보기
 function processAndRenderResults(data) {
-    // "층간소음"이나 "db" 데이터를 올바르게 읽도록 처리
+    // 여러 동을 처리하기 위해 groupedByBuilding을 만듭니다.
+    const groupedByBuilding = {};
+
     data.forEach(apartment => {
-        apartment.층간소음 = apartment['층간소음'] || apartment['db'];
+        const building = apartment['동'];
+        if (!groupedByBuilding[building]) {
+            groupedByBuilding[building] = [];
+        }
+        groupedByBuilding[building].push(apartment);
     });
 
-    // 동호수표 형식 보기 및 분포표 형식 보기 탭 활성화
-    document.getElementById('resultTabs').classList.remove('hidden');
-
-    // 동호수표 형식 결과 생성
-    renderApartments(data);
+    // 각 동에 대해 renderApartments를 호출하여 동호수표 형식으로 보기 생성
+    renderApartments(groupedByBuilding);
 
     // 분포표 형식 결과 생성
     processDistributionData(data);
+
+    // 결과보기 탭 활성화
+    document.getElementById('resultTabs').classList.remove('hidden');
 }
 
 // 동호수표 형식으로 보기
-function renderApartments(data) {
+function renderApartments(groupedData) {
     const container = document.getElementById('apartment-container');
     container.innerHTML = ''; // 기존 내용을 지우기
 
-    // 라인별로 아파트 데이터를 그룹화
-    const groupedByLine = {};
-    data.forEach(apartment => {
-        const line = apartment['라인'];
-        const floor = parseInt(apartment['호수'].slice(0, -1) / 100); // 호수에서 층 번호 추출
+    // 동을 가로로 배치하기 위해 container의 display 속성을 'flex'로 설정
+    container.style.display = 'flex';
+    container.style.flexWrap = 'wrap'; // 동이 많을 경우 줄 바꿈을 허용
+    container.style.gap = '20px'; // 동 간의 간격 설정
 
-        if (!groupedByLine[line]) {
-            groupedByLine[line] = {};
+    // 각 동을 반복하며 동호수표를 생성
+    for (const building in groupedData) {
+        const apartments = groupedData[building];
+        const maxFloors = Math.max(...apartments.map(a => parseInt(a['호수'].slice(0, -1) / 100)));
+        const lines = [...new Set(apartments.map(a => a['라인']))].sort();
+
+        const newBuilding = document.createElement('div');
+        newBuilding.classList.add('building');
+        newBuilding.style.display = 'inline-block'; // 동을 가로로 정렬
+        newBuilding.style.margin = '10px'; // 동 사이 간격
+
+        // 동 이름 표시
+        const buildingHeader = document.createElement('h3');
+        buildingHeader.innerText = `${building}동`;
+        newBuilding.appendChild(buildingHeader);
+
+        // 아파트 구조 생성 (아래에서 위로 층을 표시)
+        for (let floor = maxFloors; floor >= 1; floor--) {
+            const lineContainer = document.createElement('div');
+            lineContainer.classList.add('line');
+
+            lines.forEach(line => {
+                const roomDiv = document.createElement('div');
+                roomDiv.classList.add('room');
+
+                // 현재 라인과 층에 해당하는 아파트 찾기
+                const apartment = apartments.find(a => a['라인'] == line && parseInt(a['호수'].slice(0, -1) / 100) === floor);
+
+                if (apartment) {
+                    const noiseLevel = apartment['층간소음'] || apartment['db'];
+                    const noiseClass = noiseLevel >= 55 ? 'high' : 'low'; // 기준에 따라 색상 지정
+                    roomDiv.classList.add(noiseClass);
+                    roomDiv.innerHTML = `<p>${apartment['호수']}</p><p>Noise: ${noiseLevel}</p>`;
+                }
+                lineContainer.appendChild(roomDiv);
+            });
+            newBuilding.appendChild(lineContainer);
         }
-        if (!groupedByLine[line][floor]) {
-            groupedByLine[line][floor] = [];
-        }
-        groupedByLine[line][floor].push(apartment);
-    });
 
-    // 최대 층을 계산하여 아파트 구조를 아래에서 위로 표시
-    const maxFloors = Math.max(...data.map(apartment => parseInt(apartment['호수'].slice(0, -1) / 100)));
-    const lines = Object.keys(groupedByLine).sort(); // 라인 정렬
-
-    for (let floor = maxFloors; floor >= 1; floor--) {
-        const lineContainer = document.createElement('div');
-        lineContainer.classList.add('line');
-
-        lines.forEach(line => {
-            const roomDiv = document.createElement('div');
-            roomDiv.classList.add('room');
-
-            const apartment = groupedByLine[line][floor] ? groupedByLine[line][floor][0] : null;
-            if (apartment) {
-                const noiseLevel = apartment['층간소음'];
-                const noiseClass = noiseLevel >= 55 ? 'high' : 'low'; // 기준에 따라 색상 지정
-                roomDiv.classList.add(noiseClass);
-                roomDiv.innerHTML = `<p>${apartment['호수']}</p><p>Noise: ${noiseLevel}</p>`;
-            }
-            lineContainer.appendChild(roomDiv);
-        });
-
-        container.appendChild(lineContainer);
+        container.appendChild(newBuilding); // 동을 컨테이너에 추가
     }
 }
 
