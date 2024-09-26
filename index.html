@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>바닥 슬라브 시공품질 관리 솔루션</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>
+        <img src="로고이미지.png" alt="로고" style="width: 100px; vertical-align: middle; margin-right: 20px;">
+        바닥 슬라브 시공품질 관리 솔루션
+    </h1>
+
+    <!-- 탭 내비게이션 -->
+    <div class="tab">
+        <button class="tablinks" onclick="openTab(event, 'generate')">동호수표 생성</button>
+        <button class="tablinks" onclick="openTab(event, 'dashboard')">대시보드</button>
+    </div>
+
+    <!-- 동호수표 생성 화면 -->
+    <div id="generate" class="tabcontent">
+        <h2>동호수표 생성</h2>
+        <button id="addBuildingBtn">동 추가하기</button>
+
+        <div id="buildingFormContainer" class="hidden">
+            <h3>새로운 동 추가</h3>
+            <label>동 번호: </label>
+            <input type="text" id="buildingNumber" placeholder="동 번호를 입력하세요">
+            <div id="lineInputsContainer"></div>
+            <button id="addLineBtn">라인 추가하기</button>
+            <button id="addFinalBuildingBtn">최종 동 추가하기</button>
+        </div>
+
+        <div id="buildingContainer"></div>
+        <button id="exportExcelBtn">엑셀로 내보내기</button>
+    </div>
+
+    <!-- 대시보드 화면 -->
+    <div id="dashboard" class="tabcontent">
+        <h2>엑셀 업데이트 및 대시보드</h2>
+        <input type="file" id="fileUpload" accept=".xlsx" />
+        <button id="uploadFileBtn">엑셀 업로드</button>
+
+        <!-- 결과 보기 탭 내비게이션 -->
+        <div id="resultTabs" class="hidden">
+            <button class="resultTablinks" onclick="openResultTab(event, 'apartmentResult')">동호수표 형식으로 보기</button>
+            <button class="resultTablinks" onclick="openResultTab(event, 'distributionResult')">분포표 형식으로 보기</button>
+        </div>
+
+        <!-- 동호수표 형식 결과 -->
+        <div id="apartmentResult" class="resultContent">
+            <h3>동호수표 형식 결과</h3>
+            <div class="container" id="apartment-container"></div>
+        </div>
+
+        <!-- 분포표 형식 결과 -->
+        <div id="distributionResult" class="resultContent">
+            <h3>분포표 형식 결과</h3>
+            <div id="chart-container">
+                <canvas id="dbChart"></canvas>
+            </div>
+            <div id="table-container">
+                <table id="data-table"></table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 스크립트 파일 연결 -->
+    <script src="script.js"></script>
+</body>
+</html>
